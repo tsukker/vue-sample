@@ -49,3 +49,23 @@ export const firebaseConfig = {
   measurementId: "MEASUREMENT_ID"
 };
 ```
+
+### Realtime Database
+
+Rules:
+
+```json
+{
+  "rules": {
+    // As default, deny all access
+    ".read": false,
+    ".write": false,
+    "data": {
+      "$roomId": {
+        ".read": "auth != null",  // Allow access of authorized users
+        ".write": "auth != null"  // Allow access of authorized users
+      }
+    }
+  }
+}
+```
