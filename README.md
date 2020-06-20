@@ -54,7 +54,7 @@ export const firebaseConfig = {
 
 Rules:
 
-```json
+```json5
 {
   "rules": {
     // As default, deny all access
