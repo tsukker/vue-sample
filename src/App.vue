@@ -49,6 +49,28 @@
       <textarea v-model="input" :disabled="!user.uid" @keydown.enter.exact.prevent="doSend"></textarea>
       <button type="submit" :disabled="!user.uid" class="send-button">Send</button>
     </form>
+
+    <!-- コンポーネント MyModal -->
+    <MyModal @close="closeModal" v-if="modal.visible">
+      <!-- default スロットコンテンツ -->
+      <p>{{ modal.message }}</p>
+      <div v-if="modal.inputVisible">
+        <input
+          v-model="modal.input"
+          pattern="[0-9]*"
+          id="modal-input"
+          @keydown.enter="onClickModalEnter"
+          placeholder="01234"
+        />
+      </div>
+      <!-- /default -->
+      <!-- footer スロットコンテンツ -->
+      <template slot="footer">
+        <button type="button" @click="closeModal" style="color:#cc0000">Cancel</button>
+        <button type="button" @click="onClickModalEnter">Enter</button>
+      </template>
+      <!-- /footer -->
+    </MyModal>
   </div>
 </template>
 
@@ -58,15 +80,17 @@
 import firebase from "firebase";
 // 改行を <br> タグに変換するモジュール
 import Nl2br from "vue-nl2br";
-import { generateRandomRoomId } from "./utility.js";
+import { generateRandomRoomId, isValidRoomId } from "./utility.js";
+import MyModal from "./components/MyModal.vue";
 export default {
-  components: { Nl2br },
+  components: { Nl2br, MyModal },
   data() {
     return {
       user: {}, // ユーザー情報
       chat: [], // 取得したメッセージを入れる配列
       input: "", // 入力したメッセージ
-      roomId: ""
+      roomId: "",
+      modal: { visible: false, message: "", inputVisible: false, input: "" }
     };
   },
   created() {
@@ -115,7 +139,7 @@ export default {
       this.scrollBottom();
     },
     doSend() {
-      if (this.user.uid && this.input.length) {
+      if (this.user.uid && this.roomId !== "" && this.input.length) {
         // firebase にメッセージを追加
         firebase
           .database()
@@ -184,6 +208,10 @@ export default {
     },
     enterRoom(roomId) {
       console.log("enterRoom");
+      if (!isValidRoomId(roomId)) {
+        alert(`Room ID ${roomId} is not valid.`);
+        return;
+      }
       if (this.roomId !== "") {
         alert(`You already entered room #${this.roomId}`);
         return;
@@ -195,7 +223,16 @@ export default {
       console.log("ref registered: " + `data/${roomId}/message`);
     },
     onClickEnterRoom() {
-      alert("onClickEnterRoom");
+      console.log("onClickEnterRoom");
+      Object.assign(this.modal, {
+        visible: true,
+        message: "Room ID",
+        inputVisible: true,
+        input: ""
+      });
+      this.$nextTick().then(() =>
+        document.getElementById("modal-input").focus()
+      );
     },
     leaveRoom(roomId) {
       console.log("leaveRoom");
@@ -211,12 +248,19 @@ export default {
     },
     onClickLeaveRoom() {
       this.leaveRoom(this.roomId);
+    },
+    closeModal() {
+      this.modal.visible = false;
+    },
+    onClickModalEnter() {
+      this.enterRoom(this.modal.input);
+      this.closeModal();
     }
   }
 };
 </script>
 
-<style>
+<style scoped>
 * {
   margin: 0;
   box-sizing: border-box;
